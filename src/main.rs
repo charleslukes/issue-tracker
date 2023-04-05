@@ -1,3 +1,18 @@
+use regex::Regex;
+use std::env;
+use std::fs;
+use reqwest::Error;
+
+#[tokio::main]
+async fn main() {
+    let args: Vec<String> = env::args().collect();
+    let file_data = FileData::new(&args[1]);
+    let todo_details = FileData::search_todo(&file_data.file_content);
+    println!("todo details {:?}", todo_details);
+    let res = make_api_call().await;
+    println!("Result ==> {:?}", res);
+}
+
 struct FileData {
     file_content: String,
 }
