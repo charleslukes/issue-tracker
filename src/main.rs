@@ -38,3 +38,15 @@ impl FileData {
         todo_issues
     }
 }
+
+async fn make_api_call() -> Result<String, Error> {
+    let response = reqwest::get("https://httpbin.org/ip")
+        .await
+        // each response is wrapped in a `Result` type
+        // we'll unwrap here for simplicity
+        .unwrap()
+        .text()
+        .await;
+
+    response
+}
