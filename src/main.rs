@@ -54,14 +54,17 @@ impl FileData {
     }
 }
 
-async fn make_api_call() -> Result<String, Error> {
-    let response = reqwest::get("https://httpbin.org/ip")
-        .await
-        // each response is wrapped in a `Result` type
-        // we'll unwrap here for simplicity
-        .unwrap()
-        .text()
-        .await;
+    async fn get_issues() -> Result<Vec<RepoInfo>, Error> {
+        let client = reqwest::Client::new();
+        let response = client
+            .get("https://api.github.com/repos/charleslukes/issue-tracker/issues")
+            .header("User-Agent", "request")
+            .send()
+            .await?;
+
+        let result: Vec<RepoInfo> = response.json().await?;
+        Ok(result)
+    }
 
     response
 }
