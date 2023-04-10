@@ -54,6 +54,12 @@ impl FileData {
     }
 }
 
+#[allow(dead_code)]
+struct Issues {
+    user_issues: Vec<RepoInfo>,
+}
+
+impl Issues {
     async fn get_issues() -> Result<Vec<RepoInfo>, Error> {
         let client = reqwest::Client::new();
         let response = client
