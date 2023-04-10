@@ -1,16 +1,22 @@
 use regex::Regex;
-use std::env;
-use std::fs;
+use reqwest::header::ACCEPT;
+use reqwest::header::AUTHORIZATION;
 use reqwest::Error;
+use serde::Deserialize;
+use serde_json::json;
+use std::env;
+use std::fmt::Debug;
+use std::fs;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Error> {
     let args: Vec<String> = env::args().collect();
     let file_data = FileData::new(&args[1]);
-    let todo_details = FileData::search_todo(&file_data.file_content);
-    println!("todo details {:?}", todo_details);
-    let res = make_api_call().await;
-    println!("Result ==> {:?}", res);
+    let todos = FileData::create_todo(&file_data.file_content);
+    let user_issues = Issues::get_issues().await?;
+    println!("{:?}", user_issues);
+    Issues::create_all_issues(todos, &user_issues).await?;
+    Ok(())
 }
 
 struct FileData {
@@ -19,8 +25,8 @@ struct FileData {
 #[derive(Debug)]
 #[allow(dead_code)]
 struct TodoDetails {
-    todo: String,
-    description: String,
+    title: String,
+    body: String,
 }
 
 impl FileData {
@@ -43,25 +49,39 @@ impl FileData {
 
         text.to_string()
     }
+
+    fn create_todo(text: &String) -> Vec<TodoDetails> {
         let reg_ex = Regex::new(r"((todo|description)(.*?)(\n))").unwrap();
         let mut todo_issues: Vec<TodoDetails> = Vec::new();
         for cap in reg_ex.captures_iter(text) {
             let check_desc = cap[2].to_string().trim().to_owned();
             if check_desc.eq("todo") {
+                let title_text = cap[3].to_string().trim().to_owned();
                 todo_issues.push(TodoDetails {
-                    todo: cap[3].to_string().trim().to_owned(),
-                    description: String::new(),
+                    title: FileData::remove_first_column_char(&':', &title_text),
+                    body: String::new(),
                 });
             };
             // add description
             if check_desc.eq("description") {
+                let desc = cap[3].to_string();
                 let todo_issue_length = todo_issues.len() - 1;
-                todo_issues[todo_issue_length].description = cap[3].to_string();
+                todo_issues[todo_issue_length].body =
+                    FileData::remove_first_column_char(&':', &desc);
             };
         }
 
         todo_issues
     }
+}
+
+#[derive(Deserialize, Debug)]
+#[allow(dead_code)]
+struct RepoInfo {
+    url: String,
+    id: u32,
+    number: u32,
+    title: String,
 }
 
 #[allow(dead_code)]
