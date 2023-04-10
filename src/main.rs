@@ -32,7 +32,17 @@ impl FileData {
         }
     }
 
-    fn search_todo(text: &String) -> Vec<TodoDetails> {
+    fn remove_first_column_char(value: &char, text: &String) -> String {
+        let column = text.chars().nth(0).unwrap();
+        if column.eq(value) {
+            let mut iter = text.chars();
+            iter.by_ref().nth(0);
+            let slice_text = iter.as_str().trim();
+            return slice_text.to_owned();
+        }
+
+        text.to_string()
+    }
         let reg_ex = Regex::new(r"((todo|description)(.*?)(\n))").unwrap();
         let mut todo_issues: Vec<TodoDetails> = Vec::new();
         for cap in reg_ex.captures_iter(text) {
