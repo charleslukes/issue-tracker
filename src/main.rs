@@ -86,4 +86,26 @@ impl FileData {
         Ok(res)
     }
 
+    async fn create_all_issues(
+        all_todos: Vec<TodoDetails>,
+        all_repos: &Vec<RepoInfo>,
+    ) -> Result<(), Error> {
+        for todo in all_todos {
+            // check if issue is already created
+            let title = todo.title.trim().to_owned();
+            let mut all_repos_iter = all_repos.into_iter();
+            let check_issue = all_repos_iter.find(|&x| x.title.trim().eq_ignore_ascii_case(&title));
+            match check_issue {
+                Some(_) => {
+                    continue;
+                }
+                None => {
+                    // if none found create issue
+                    Issues::create_issue(todo).await?;
+                }
+            };
+        }
+
+        Ok(())
+    }
 }
