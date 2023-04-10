@@ -66,5 +66,24 @@ impl FileData {
         Ok(result)
     }
 
-    response
+    async fn create_issue(todo: TodoDetails) -> Result<RepoInfo, Error> {
+        let client = reqwest::Client::new();
+        let body = json!({
+            "title": todo.title,
+            "body": todo.body
+        });
+
+        let response = client
+            .post("https://api.github.com/repos/charleslukes/issue-tracker/issues")
+            .header("User-Agent", "request")
+            .header(AUTHORIZATION, "Bearer xxxx")
+            .header(ACCEPT, "application/vnd.github+json")
+            .json(&body)
+            .send()
+            .await?;
+
+        let res = response.json().await?;
+        Ok(res)
+    }
+
 }
