@@ -1,5 +1,9 @@
-use crate::{custom_error::Error, shared::TodoDetails};
-use reqwest::header::{ACCEPT, AUTHORIZATION};
+use crate::{
+    custom_error::Error,
+    service::{Service, ServiceEnum},
+    shared::TodoDetails,
+};
+use reqwest::header::{HeaderMap, ACCEPT, AUTHORIZATION};
 use serde::Deserialize;
 use serde_json::json;
 use std::env;
@@ -18,20 +22,16 @@ pub struct Issues {
 }
 
 impl Issues {
-    pub async fn get_issues() -> Result<Vec<RepoInfo>, Error> {
-        let client = reqwest::Client::new();
-        let response = client
-            .get("https://api.github.com/repos/charleslukes/issue-tracker/issues")
-            .header("User-Agent", "request")
-            .send()
-            .await?;
+    pub async fn get_issues(service: &Service<'_>) -> Result<Vec<RepoInfo>, Error> {
+        let mut headers = HeaderMap::new();
+        headers.insert("User-Agent", "request".parse().unwrap());
 
+        let response = service.call(ServiceEnum::GET, Some(headers), None).await?;
         let result: Vec<RepoInfo> = response.json().await?;
         Ok(result)
     }
 
-    pub async fn create_issue(todo: TodoDetails) -> Result<RepoInfo, Error> {
-        let client = reqwest::Client::new();
+    pub async fn create_issue(todo: TodoDetails, service: &Service<'_>) -> Result<RepoInfo, Error> {
         let body = json!({
             "title": todo.title,
             "body": todo.body
@@ -43,13 +43,13 @@ impl Issues {
                 let mut bearer = String::from("Bearer ");
                 bearer.push_str(&key.to_owned());
 
-                let response = client
-                    .post("https://api.github.com/repos/charleslukes/issue-tracker/issues")
-                    .header("User-Agent", "request")
-                    .header(AUTHORIZATION, bearer)
-                    .header(ACCEPT, "application/vnd.github+json")
-                    .json(&body)
-                    .send()
+                let mut headers = HeaderMap::new();
+                headers.insert("User-Agent", "request".parse().unwrap());
+                headers.insert(AUTHORIZATION, bearer.parse().unwrap());
+                headers.insert(ACCEPT, "application/vnd.github+json".parse().unwrap());
+
+                let response = service
+                    .call(ServiceEnum::POST, Some(headers), Some(body))
                     .await?;
 
                 let res: RepoInfo = response.json().await?;
@@ -62,6 +62,7 @@ impl Issues {
     pub async fn create_all_issues(
         all_todos: Vec<TodoDetails>,
         all_repos: &Vec<RepoInfo>,
+        service: &Service<'_>,
     ) -> Result<(), Error> {
         for todo in all_todos {
             // check if issue is already created
@@ -74,7 +75,7 @@ impl Issues {
                 }
                 None => {
                     // if none found create issue
-                    Issues::create_issue(todo).await?;
+                    Issues::create_issue(todo, &service).await?;
                 }
             };
         }
