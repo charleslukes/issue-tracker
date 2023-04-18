@@ -1,4 +1,4 @@
-## ISSUE CREATOR
+## ISSUE TRACKER
 
 #### GOALS
 - Read file
