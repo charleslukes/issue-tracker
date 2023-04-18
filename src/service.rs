@@ -26,23 +26,23 @@ impl Service<'_> {
         body: Option<Value>,
     ) -> Result<Response, reqwest::Error> {
         let client = reqwest::Client::new();
+        // check for headers
+        let req_headers = match headers {
+            Some(h) => h,
+            None => {
+                panic!("Please include headers");
+            }
+        };
 
         match request_type {
             ServiceEnum::GET => {
                 client
                     .get(self.issues_url())
+                    .headers(req_headers)
                     .send()
                     .await
             }
             ServiceEnum::POST => {
-                // check for headers
-                let req_headers = match headers {
-                    Some(h) => h,
-                    None => {
-                        panic!("Please include headers");
-                    }
-                };
-
                 // check for body
                 let req_body = match body {
                     Some(b) => b,
